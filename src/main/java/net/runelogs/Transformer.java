@@ -53,6 +53,18 @@ public class Transformer {
         );
     };
 
+    public static final Function<HitsplatApplied, String> HITSPLAT_APPLIED = event -> {
+        Hitsplat hitsplat = event.getHitsplat();
+        return transform(
+                event,
+                String.join(
+                        " ",
+                        String.valueOf(hitsplat.getHitsplatType()),
+                        String.valueOf(hitsplat.getAmount())
+                )
+        );
+    };
+
     public static final Function<WorldPoint, String> WORLD_POINT = object -> {
         return transform(
                 object,

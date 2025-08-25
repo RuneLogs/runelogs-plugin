@@ -1,15 +1,12 @@
 package net.runelogs;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Provides;
-
-import javax.inject.Inject;
-
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.ItemContainer;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
@@ -20,12 +17,15 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelogs.tracker.SkillingTracker;
+import net.runelogs.tracker.method.hitsplat.impl.HitsplatMethod;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.inject.Inject;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -55,17 +55,30 @@ public class RuneLogsPlugin extends Plugin {
     @Getter(AccessLevel.NONE)
     private int clientTick, regionId, worldX, worldY, worldZ;
 
+    @Getter(AccessLevel.PUBLIC)
+    private final Set<SkillingTracker> skillingTrackerSet = ImmutableSet.of(
+            new HitsplatMethod()
+    );
+
+    @Inject
+    @Getter(AccessLevel.PUBLIC)
+    private RuneLogsConfig config;
+
     @Inject
     private Client client;
 
     @Inject
-    private RuneLogsConfig config;
+    private RuneLogsOverlay basicOverlay;
+
+    @Inject
+    private OverlayManager overlayManager;
 
     @Inject
     private ScheduledExecutorService executor;
 
     @Override
     protected void startUp() throws Exception {
+        this.overlayManager.add(basicOverlay);
         this.previousSkillExpTable = new EnumMap<>(Skill.class);
 
         this.directory = new File(RuneLite.RUNELITE_DIR, "runelogs");
@@ -81,6 +94,7 @@ public class RuneLogsPlugin extends Plugin {
 
     @Override
     protected void shutDown() throws Exception {
+        this.overlayManager.remove(basicOverlay);
         this.flushQueue();
         this.previousSkillExpTable = null;
         this.fileWriter = null;
@@ -151,6 +165,10 @@ public class RuneLogsPlugin extends Plugin {
             this.regionId = currentRegionId;
         }
 
+        for (SkillingTracker tracker : skillingTrackerSet) {
+            tracker.onGameTickFinished(clientTick - 1);
+        }
+
         this.flushQueue();
     }
 
@@ -160,9 +178,21 @@ public class RuneLogsPlugin extends Plugin {
     }
 
     @Subscribe
+    public void onHitsplatApplied(HitsplatApplied hitsplatApplied) {
+        if (hitsplatApplied.getActor() != client.getLocalPlayer()) return;
+        this.enqueue(Transformer.HITSPLAT_APPLIED.apply(hitsplatApplied));
+        for (SkillingTracker tracker : skillingTrackerSet) {
+            tracker.onSelfHitsplat(clientTick, hitsplatApplied);
+        }
+    }
+
+    @Subscribe
     public void onInteractingChanged(InteractingChanged interactingChanged) {
         if (interactingChanged.getSource() != client.getLocalPlayer()) return;
         this.enqueue(Transformer.INTERACTING_CHANGED.apply(interactingChanged));
+        for (SkillingTracker tracker : skillingTrackerSet) {
+            tracker.onSafeInteractionChanged(clientTick, interactingChanged);
+        }
     }
 
     @Subscribe
@@ -176,6 +206,9 @@ public class RuneLogsPlugin extends Plugin {
     public void onAnimationChanged(AnimationChanged animationChanged) {
         if (animationChanged.getActor() != client.getLocalPlayer()) return;
         this.enqueue(Transformer.ANIMATION_CHANGED.apply(animationChanged));
+        for (SkillingTracker tracker : skillingTrackerSet) {
+            tracker.onSelfAnimationChange(clientTick, animationChanged);
+        }
     }
 
     @Subscribe
@@ -195,6 +228,15 @@ public class RuneLogsPlugin extends Plugin {
         Integer previous = previousSkillExpTable.put(skill, xp);
 
         this.enqueue(Transformer.STAT_CHANGED.apply(Pair.of(statChanged, previous)));
+
+        if (previous == null) return;
+
+        final int gained = xp - previous;
+        if (gained == 0) return;
+
+        for (SkillingTracker tracker : skillingTrackerSet) {
+            tracker.onExperienceGain(clientTick, skill, gained);
+        }
     }
 
     @Provides
