@@ -54,6 +54,7 @@ public class StaticConstant {
                     )
                     .build(),
             EventPattern.builder()
+                    .anywhere(Predicates.optionEquals("Chop down"))
                     .tick(
                             Predicates.hitsplat(),
                             Predicates.interactingWithTarget(),

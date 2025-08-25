@@ -45,8 +45,6 @@ public abstract class SkillingTracker extends AbstractTracker {
 
     public abstract double getPresumedCycleDuration();
 
-    public abstract boolean isOnCycle();
-
     public abstract int getMissed();
 
     public abstract int getRolls();

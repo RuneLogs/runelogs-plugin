@@ -5,12 +5,10 @@ import net.runelite.api.Skill;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.InteractingChanged;
+import net.runelite.api.events.MenuOptionClicked;
 import net.runelogs.StaticConstant;
 import net.runelogs.event.pattern.HistoricEvent;
-import net.runelogs.event.wrapper.SafeAnimationChanged;
-import net.runelogs.event.wrapper.SafeHitsplatApplied;
-import net.runelogs.event.wrapper.SafeInteractionChanged;
-import net.runelogs.event.wrapper.SafeStatChanged;
+import net.runelogs.event.wrapper.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,6 +31,21 @@ public abstract class AbstractTracker implements Tracker {
     public void onGameTickFinished(int finishedTick) {
         this.currentTick = finishedTick + 1;
         this.finishedTick = finishedTick;
+    }
+
+    @Override
+    public void onMenuOptionClicked(int clientTick, MenuOptionClicked menuOptionClicked) {
+        this.add(
+                new HistoricEvent<>(
+                        internal.getAndIncrement(),
+                        clientTick,
+                        new SafeMenuOptionClicked(
+                                menuOptionClicked.getMenuOption(),
+                                menuOptionClicked.getMenuTarget().replaceAll("(<.*?>)", ""),
+                                menuOptionClicked.getMenuAction()
+                        )
+                )
+        );
     }
 
     @Override
@@ -74,4 +87,6 @@ public abstract class AbstractTracker implements Tracker {
                 )
         );
     }
+
+    public abstract boolean isOnCycle();
 }

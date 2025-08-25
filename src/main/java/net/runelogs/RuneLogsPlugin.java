@@ -178,6 +178,14 @@ public class RuneLogsPlugin extends Plugin {
     }
 
     @Subscribe
+    public void onMenuOptionClicked(MenuOptionClicked menuOptionClicked) {
+        this.enqueue(Transformer.MENU_OPTION_CLICKED.apply(menuOptionClicked));
+        for (SkillingTracker tracker : skillingTrackerSet) {
+            tracker.onMenuOptionClicked(clientTick, menuOptionClicked);
+        }
+    }
+
+    @Subscribe
     public void onHitsplatApplied(HitsplatApplied hitsplatApplied) {
         if (hitsplatApplied.getActor() != client.getLocalPlayer()) return;
         this.enqueue(Transformer.HITSPLAT_APPLIED.apply(hitsplatApplied));

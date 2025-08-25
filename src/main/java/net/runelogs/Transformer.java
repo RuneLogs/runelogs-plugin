@@ -41,6 +41,18 @@ public class Transformer {
         );
     };
 
+    public static final Function<MenuOptionClicked, String> MENU_OPTION_CLICKED = event -> {
+        return transform(
+                event,
+                String.join(
+                        " ",
+                        event.getMenuOption(),
+                        event.getMenuTarget().replaceAll("(<.*?>)", ""),
+                        event.getMenuAction().name()
+                )
+        );
+    };
+
     public static final Function<VarbitChanged, String> VARBIT_CHANGED = event -> {
         return transform(
                 event,

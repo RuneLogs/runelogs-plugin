@@ -3,6 +3,7 @@ package net.runelogs.event.pattern;
 import net.runelogs.event.wrapper.SafeAnimationChanged;
 import net.runelogs.event.wrapper.SafeHitsplatApplied;
 import net.runelogs.event.wrapper.SafeInteractionChanged;
+import net.runelogs.event.wrapper.SafeMenuOptionClicked;
 
 import java.util.Set;
 
@@ -36,5 +37,10 @@ public class Predicates {
             }
             return false;
         };
+    }
+
+    public static EventPredicate optionEquals(String option) {
+        return e -> e.getEvent() instanceof SafeMenuOptionClicked &&
+                ((SafeMenuOptionClicked) e.getEvent()).getOption().equals(option);
     }
 }
