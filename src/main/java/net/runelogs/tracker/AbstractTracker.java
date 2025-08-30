@@ -24,7 +24,6 @@ public abstract class AbstractTracker implements Tracker {
 
     private void add(HistoricEvent<?> event) {
         this.eventHistory.add(event);
-        log.info("{}", event);
     }
 
     @Override

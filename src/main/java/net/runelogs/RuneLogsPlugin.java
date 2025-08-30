@@ -82,7 +82,6 @@ public class RuneLogsPlugin extends Plugin {
         this.previousSkillExpTable = new EnumMap<>(Skill.class);
 
         this.directory = new File(RuneLite.RUNELITE_DIR, "runelogs");
-        log.info(directory.getAbsolutePath());
         this.directory.mkdirs();
         this.rotate();
 

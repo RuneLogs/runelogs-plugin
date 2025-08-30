@@ -11,7 +11,6 @@ import net.runelogs.tracker.method.hitsplat.HitsplatTracker;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Slf4j
 @Getter
 public class HitsplatMethod extends HitsplatTracker {
 
@@ -25,12 +24,9 @@ public class HitsplatMethod extends HitsplatTracker {
     public void onGameTickFinished(int finishedTick) {
         super.onGameTickFinished(finishedTick);
 
-        log.info("TICK: {}", this.finishedTick);
-
         AnimationReference animationReference = getPresumableMethod();
 
         if (this.animationReference != animationReference) {
-            log.info("Activity has changed, reset roll count");
             this.missed = 0;
             this.rolls = 0;
         }
@@ -38,7 +34,6 @@ public class HitsplatMethod extends HitsplatTracker {
         this.animationReference = animationReference;
 
         if (animationReference == null) {
-            log.info("Unable to find animation reference");
             this.isOnActionCycle = false;
             return;
         }
@@ -47,19 +42,13 @@ public class HitsplatMethod extends HitsplatTracker {
 
         int lastHitsplatTick = getLastHitsplatTick();
         if (finishedTick != lastHitsplatTick + 1) {
-            log.info("Current Cycle skipped due to hitsplat history");
             return;
         }
 
         List<HistoricEvent<?>> list = createEventHistory();
         if (list == null) {
-            log.info("Unable to create history");
             this.isOnActionCycle = false;
             return;
-        }
-
-        for (int i = 0; i < list.size(); i++) {
-            log.info("{}: >  {}", i, list.get(i));
         }
 
         boolean isOnActionCycle = false;
@@ -67,8 +56,6 @@ public class HitsplatMethod extends HitsplatTracker {
             if (!pattern.matches(list)) continue;
             isOnActionCycle = true;
         }
-
-        log.info("isOnActionCycle: {}", isOnActionCycle);
 
         this.isOnActionCycle = isOnActionCycle;
         if (!isOnActionCycle) this.missed++;
